@@ -4,22 +4,26 @@ import random
 import numpy as np
 from model.chromosome import Chromosome
 
+
 class GeneticOperator:
-    @staticmethod
-    def apply(population: Population):
+    def apply(self, population: Population):
+        raise NotImplementedError()
+
+    def name(self) -> str:
         raise NotImplementedError()
 
 
 class BlankGenOperator(GeneticOperator):
-    @staticmethod
-    def apply(population):
+    def apply(self, population):
         for chr_i in range(N):
             population.chromosomes[chr_i].id = chr_i
 
+    def name(self) -> str:
+        return "no_operators"
+
 
 class Crossover(GeneticOperator):
-    @staticmethod
-    def apply(population: Population):
+    def apply(self, population: Population):
         np.random.shuffle(population.chromosomes)
         children = np.empty(N, dtype=object)
         l = population.fitness_function.chr_length
@@ -52,10 +56,12 @@ class Crossover(GeneticOperator):
                 children[i*2+1] = Chromosome(i*2+1, genotype2, population.fitness_function)
         population.update_chromosomes(children)
 
+    def name(self) -> str:
+        return "crossover"
+
 
 class Mutation(GeneticOperator):
-    @staticmethod
-    def apply(population: Population):
+    def apply(self, population: Population):
         l = population.fitness_function.chr_length
         p_m = get_p_m(l)
         
@@ -70,10 +76,12 @@ class Mutation(GeneticOperator):
             
         population.update()
 
+    def name(self) -> str:
+        return "mutation"
+
 
 class CrossoverAndMutation(GeneticOperator):
-    @staticmethod
-    def apply(population: Population):
+    def apply(self, population: Population):
         np.random.shuffle(population.chromosomes)
         children = np.empty(N, dtype=object)
         l = population.fitness_function.chr_length
@@ -112,3 +120,6 @@ class CrossoverAndMutation(GeneticOperator):
                     chromosome.genotype[bit_i] = int(not chromosome.genotype[bit_i])
                     chromosome.update_fitness()
         population.update_chromosomes(children)
+
+    def name(self) -> str:
+        return "xover_mut"

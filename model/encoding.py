@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Encoder:
     def __init__(self, length):
         self.length: int = length
@@ -12,6 +13,10 @@ class Encoder:
     
     def get_all_values(self):
         raise NotImplementedError()
+
+    def name(self) -> str:
+        raise NotImplementedError()
+
 
 class BinaryEncoder(Encoder):
     def __init__(self, length):
@@ -29,6 +34,9 @@ class BinaryEncoder(Encoder):
     
     def get_all_values(self):
         return [self.encode(v) for v in range(2**self.length)]
+
+    def name(self) -> str:
+        return "bin"
 
 class GrayEncoder(Encoder):
     def __init__(self, length):
@@ -52,6 +60,10 @@ class GrayEncoder(Encoder):
     
     def get_all_values(self):
         return [self.encode(v) for v in range(2**self.length)]
+
+    def name(self) -> str:
+        return "gray"
+
 
 class FloatEncoder(Encoder):
     def __init__(self, lower_bound, upper_bound, length, is_gray=False):
@@ -79,6 +91,9 @@ class FloatEncoder(Encoder):
     def get_all_values(self):
         return self.sub_encoder.get_all_values()
 
+    def name(self) -> str:
+        return self.sub_encoder.name()
+
 
 # Testing
 if __name__ == '__main__':
@@ -86,3 +101,4 @@ if __name__ == '__main__':
     encoder = FloatEncoder(-5.12, 5.11, 10, is_gray=True)
     for x in xs:
         print(f'{x:.2f} -> {encoder.encode(x)} -> {encoder.decode(encoder.encode(x)):.2f}')
+    print(encoder.name())

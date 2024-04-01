@@ -1,35 +1,40 @@
+import random
+
 import numpy as np
 from config import N, EPS, N_LAST_GENS
 from model.chromosome import Chromosome
 from copy import deepcopy, copy
+from collections import Counter
+
+from model.population_initialization import PopulationInitialization
 
 
 class Population:
-    def __init__(self, fitness_function, seed=0, chromosomes=None):
+    def __init__(self, fitness_function, seed=0, chromosomes=None, *, initialization: PopulationInitialization):
         self.fitness_function = fitness_function
+        self.initialization = initialization
 
         if chromosomes is not None:
             self.chromosomes = chromosomes
         else:
+            num_of_optimal = initialization.number_of_optimal_individuals(population_size=N)
             self.chromosomes = np.empty(N, dtype=object)
-            self.chromosomes[0] = copy(fitness_function.get_optimal())
+            for i in range(num_of_optimal):
+                optimal_chromosome = copy(fitness_function.get_optimal())
+                optimal_chromosome.id = i
+                self.chromosomes[i] = optimal_chromosome
             rng = np.random.default_rng(seed=seed)
-            for chr_i in range(1, N):
+            for chr_i in range(num_of_optimal, N):
                 genotype = rng.choice([b'0', b'1'], fitness_function.chr_length)
                 self.chromosomes[chr_i] = Chromosome(chr_i, genotype, fitness_function)
 
         self.update()
 
-    def has_converged(self, f_avgs, param_names):
-        has_mutation = 'mut' in param_names[2]
-
-        if not has_mutation:
+    def has_converged(self, has_genetic_operators: bool):
+        if not has_genetic_operators:
             return self.is_homogenous_100()
-            
-        if param_names[0] == 'FconstALL':
-            return self.is_homogenous_99()
 
-        return self.has_f_avg_converged(f_avgs)
+        return self.is_homogenous_99()
     
     def has_f_avg_converged(self, f_avgs):
         if len(f_avgs) < N_LAST_GENS:
@@ -53,7 +58,7 @@ class Population:
         return True
 
     def is_homogenous_100(self):
-            return all([np.array_equal(geno, self.genotypes[0]) for geno in self.genotypes[1:]])
+        return all([np.array_equal(geno, self.genotypes[0]) for geno in self.genotypes[1:]])
 
     def found_close_to_optimal(self):
         for chr in self.chromosomes:
@@ -78,6 +83,13 @@ class Population:
         optimal = self.fitness_function.get_optimal().genotype
         return len([True for g in self.genotypes if np.array_equal(g, optimal)])
 
+    def most_frequent_genotype_percentage(self) -> float:
+        _, most_frequent_count = Counter(chr.hashable_id() for chr in self.chromosomes).most_common(1)[0]
+        return most_frequent_count / len(self.chromosomes)
+
+    def num_of_unique_chromosomes(self) -> int:
+        return len(set(chr.hashable_id() for chr in self.chromosomes))
+
     def get_ids(self):
         return [chr.id for chr in self.chromosomes]
 
@@ -90,7 +102,11 @@ class Population:
         self.update()
     
     def __deepcopy__(self, memo):
-        return Population(self.fitness_function, chromosomes=deepcopy(self.chromosomes))
+        return Population(self.fitness_function, chromosomes=deepcopy(self.chromosomes), initialization=self.initialization)
     
     def __str__(self):
         return str(np.array([str(chr) for chr in self.chromosomes]))
+
+    def shuffle(self):
+        np.random.shuffle(self.chromosomes)
+        self.update()

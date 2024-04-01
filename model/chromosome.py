@@ -19,3 +19,6 @@ class Chromosome:
 
     def __str__(self):
         return f"Chr{self.id}({str(self.genotype.tobytes().decode('utf-8'))})"
+
+    def hashable_id(self) -> str:
+        return str(self.genotype.tobytes().decode('utf-8'))

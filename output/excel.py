@@ -3,8 +3,10 @@ import xlsxwriter
 import os
 from stats.experiment_stats import ExperimentStats
 
+
 def write_ff_stats(experiment_stats_list: list[ExperimentStats]):
-    ff_name = experiment_stats_list[0].params[0]
+    ff = experiment_stats_list[0].experiment_params.fitness_function
+    ff_name = ff.name()
     path = f'{OUTPUT_FOLDER}/tables/{ff_name}'
     filename = f'{ff_name}_{N}.xlsx'
 
@@ -26,36 +28,38 @@ def write_ff_stats(experiment_stats_list: list[ExperimentStats]):
         'border': 1,
         'align': 'center',
         'fg_color': 'yellow'})
-    worksheet.freeze_panes(2, 2)
+    worksheet.freeze_panes(2, 3)
     
     for exp_i, experiment_stats in enumerate(experiment_stats_list):
         row = exp_i + 2
-        worksheet.write(row, 0, experiment_stats.params[1])
-        worksheet.write(row, 1, experiment_stats.params[2])
+        worksheet.write(row, 0, experiment_stats.experiment_params.selection_method.name())
+        worksheet.write(row, 1, experiment_stats.experiment_params.genetic_operator.name())
+        worksheet.write(row, 2, str(experiment_stats.experiment_params.population_initialization))
 
         run_stats_count = len(run_stats_names)
         for run_i, run_stats in enumerate(experiment_stats.runs):
             for stat_i, stat_name in enumerate(run_stats_names):
-                col = run_i * run_stats_count + stat_i + 2
+                col = run_i * run_stats_count + stat_i + 3
                 worksheet.write(row, col, getattr(run_stats, stat_name))
                 if exp_i == 0:
                     worksheet.write(1, col, stat_name)
 
             if exp_i == 0:
-                start_col = run_i * run_stats_count + 2
+                start_col = run_i * run_stats_count + 3
                 worksheet.merge_range(0, start_col, 0, start_col + run_stats_count - 1, f'Run {run_i}', merge_format)
 
         for stat_i, stat_name in enumerate(exp_stats_names):
-            col = run_stats_count * NR + stat_i + 2
+            col = run_stats_count * NR + stat_i + 3
             worksheet.write(row, col, getattr(experiment_stats, stat_name))
             if exp_i == 0:
-                    worksheet.write(1, col, stat_name)
+                worksheet.write(1, col, stat_name)
 
         if exp_i == 0:
-            start_col = run_stats_count * NR + 2
+            start_col = run_stats_count * NR + 3
             worksheet.merge_range(0, start_col, 0, start_col + len(exp_stats_names) - 1, f'Aggregated', merge_format)
             worksheet.merge_range(0, 0, 1, 0, 'Selection Method', merge_format)
             worksheet.merge_range(0, 1, 1, 1, 'Genetic Operator', merge_format)
+            worksheet.merge_range(0, 2, 1, 2, 'Init method', merge_format)
        
     workbook.close()
     
@@ -77,14 +81,16 @@ def write_aggregated_stats(experiment_stats_list: list[ExperimentStats]):
             worksheet.write(0, 0, 'Fitness Function')
             worksheet.write(0, 1, 'Selection Method')
             worksheet.write(0, 2, 'Genetic Operator')
+            worksheet.write(0, 3, 'Init method')
 
         row = exp_i + 1
-        worksheet.write(row, 0, experiment_stats.params[0])
-        worksheet.write(row, 1, experiment_stats.params[1])
-        worksheet.write(row, 2, experiment_stats.params[2])
+        worksheet.write(row, 0, experiment_stats.experiment_params.fitness_function.name())
+        worksheet.write(row, 1, experiment_stats.experiment_params.selection_method.name())
+        worksheet.write(row, 2, experiment_stats.experiment_params.genetic_operator.name())
+        worksheet.write(row, 3, str(experiment_stats.experiment_params.population_initialization))
         
         for stat_i, stat_name in enumerate(EXP_STATS_NAMES):
-            col = stat_i + 3
+            col = stat_i + 4
             worksheet.write(row, col, getattr(experiment_stats, stat_name))
             if exp_i == 0:
                 worksheet.write(0, col, stat_name)
